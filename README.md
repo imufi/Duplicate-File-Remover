@@ -1,5 +1,7 @@
-Code
+Intro:
+The DuplicateFileRemover class in the code performs the task of finding and moving duplicate files in specified directories. It computes the MD5 hash of each file to identify duplicates and logs messages using the Logger framework. The file server invokes this utility to remove duplicate files upon user request, scanning directories for duplicates and organizing them into groups for efficient management. Duplicate files are moved to a review directory while maintaining the original directory structure.Concurrency mechanisms and proper error handling are implemented, and thorough testing and validation will be conducted before deployment to guarantee the accuracy and reliability of the duplicate file removal operation.
 
+Code
 Imports:
 The code imports necessary Java libraries for file handling, security, logging, and collections.
 
@@ -45,9 +47,9 @@ Moving Duplicate Files:
 Upon identifying duplicate files, the utility moves them to a review directory.
 The original directory structure is maintained, ensuring minimal disruption to the file system.
 
-Client Feedback and Monitoring:
-Throughout the process, the file server provides feedback to clients regarding the status of the duplicate file removal operation.
-Clients are informed about the progress of the scan, the number of duplicate files found, and any encountered errors.
+User Feedback and Monitoring:
+Throughout the process, the file server provides feedback to users regarding the status of the duplicate file removal operation.
+Users are informed about the progress of the scan, the number of duplicate files found, and any encountered errors.
 
 Security and Integrity:
 The file server ensures the security and integrity of the file system during the duplicate file removal process.
