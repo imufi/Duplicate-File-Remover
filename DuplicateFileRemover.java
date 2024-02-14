@@ -12,7 +12,9 @@ import javafx.scene.control.Button;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage
+// ^Tell compiler that we want to use classes listed
 
+    
 public class DuplicateFileRemover {
     // Override the start method of Application class to create GUI
     @Override
