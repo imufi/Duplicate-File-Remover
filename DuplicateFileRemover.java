@@ -3,8 +3,40 @@ import java.nio.file.*;
 import java.security.*;
 import java.util.*;
 import java.util.logging.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.layout.VBox;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.Stage
 
 public class DuplicateFileRemover {
+    @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("Duplicate File Remover");
+
+        Button selectSourceDirectoryButton = new Button("Select Source Directory");
+        selectSourceDirectoryButton.setOnAction(e -> {
+            DirectoryChooser directoryChooser = new DirectoryChooser();
+            File selectedDirectory = directoryChooser.showDialog(primaryStage);
+            String sourceDirectoryPath = selectedDirectory.getAbsolutePath();
+            String reviewDirectoryPath = "/path/to/review/directory"; // Specify the review directory path here
+            findAndMoveDuplicateFilesWithRetry(sourceDirectoryPath, reviewDirectoryPath);
+        });
+
+        VBox vBox = new VBox(selectSourceDirectoryButton);
+        Scene scene = new Scene(vBox, 400, 200);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+}
 
     // Define a logger for logging messages
     private static final Logger logger = Logger.getLogger(DuplicateFileRemover.class.getName());
@@ -19,6 +51,60 @@ public class DuplicateFileRemover {
 
         findAndMoveDuplicateFiles(sourceDirectoryPath, reviewDirectoryPath);
     }
+
+    
+    // Method to find and move duplicate files to the review directory with retry mechanism
+public static void findAndMoveDuplicateFilesWithRetry(String sourceDirectoryPath, String reviewDirectoryPath) {
+    // Maximum number of retry attempts
+    int maxRetries = 3;
+    // Current retry attempt count
+    int retryCount = 0;
+
+    // Flag to indicate if traversal and processing is successful
+    boolean traversalSuccessful = false;
+
+    while (!traversalSuccessful && retryCount < maxRetries) {
+        try {
+            // Attempt to traverse the directory and find duplicate files
+            findAndMoveDuplicateFiles(sourceDirectoryPath, reviewDirectoryPath);
+            // Set the flag to indicate successful traversal and processing
+            traversalSuccessful = true;
+        } catch (IOException e) {
+            // Log error if there is an issue traversing the source directory
+            logger.log(Level.SEVERE, "Error traversing directory: " + sourceDirectoryPath, e);
+            // Increment the retry count
+            retryCount++;
+            // Log the retry attempt
+            logger.log(Level.INFO, "Retrying traversal... Attempt " + retryCount + " out of " + maxRetries);
+        }
+    }
+
+    // If traversal is still unsuccessful after maximum retries, log an error message
+    if (!traversalSuccessful) {
+        logger.log(Level.SEVERE, "Failed to traverse directory after " + maxRetries + " attempts.");
+    }
+}
+    // Method to traverse files and process them concurrently
+public static void traverseAndProcessFilesConcurrently(String sourceDirectoryPath, String reviewDirectoryPath)
+        throws Exception {
+    ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    try {
+        Files.walk(Paths.get(sourceDirectoryPath))
+                .filter(Files::isRegularFile)
+                .forEach(file -> executorService.submit(() -> {
+                    try {
+                        String hash = getMD5Checksum(file);
+                        // Add file processing logic here
+                    } catch (IOException | NoSuchAlgorithmException e) {
+                        throw new RuntimeException(e);
+                    }
+                }));
+    } finally {
+        executorService.shutdown();
+        executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+    }
+}
+
 
     // Method to find and move duplicate files to the review directory
     public static void findAndMoveDuplicateFiles(String sourceDirectoryPath, String reviewDirectoryPath) {
