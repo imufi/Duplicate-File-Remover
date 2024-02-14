@@ -14,25 +14,39 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage
 
 public class DuplicateFileRemover {
+    // Override the start method of Application class to create GUI
     @Override
     public void start(Stage primaryStage) {
+        // Set the title of the primary stage
         primaryStage.setTitle("Duplicate File Remover");
 
+        // Create a button to select the source directory
         Button selectSourceDirectoryButton = new Button("Select Source Directory");
+        // Define the action to be performed when the button is clicked
         selectSourceDirectoryButton.setOnAction(e -> {
+            // Create a directory chooser dialog
             DirectoryChooser directoryChooser = new DirectoryChooser();
+            // Show the dialog and get the selected directory
             File selectedDirectory = directoryChooser.showDialog(primaryStage);
+            // Get the absolute path of the selected source directory
             String sourceDirectoryPath = selectedDirectory.getAbsolutePath();
+            // Specify the path of the review directory where duplicate files will be moved
             String reviewDirectoryPath = "/path/to/review/directory"; // Specify the review directory path here
+            // Find and move duplicate files from the selected source directory to the review directory
             findAndMoveDuplicateFilesWithRetry(sourceDirectoryPath, reviewDirectoryPath);
         });
 
+        // Create a vertical box layout to hold the button
         VBox vBox = new VBox(selectSourceDirectoryButton);
+        // Create a scene with the vertical box layout
         Scene scene = new Scene(vBox, 400, 200);
+        // Set the scene to the primary stage
         primaryStage.setScene(scene);
+        // Display the primary stage
         primaryStage.show();
     }
 
+    // Main method to launch the application
     public static void main(String[] args) {
         launch(args);
     }
@@ -84,25 +98,31 @@ public static void findAndMoveDuplicateFilesWithRetry(String sourceDirectoryPath
         logger.log(Level.SEVERE, "Failed to traverse directory after " + maxRetries + " attempts.");
     }
 }
-    // Method to traverse files and process them concurrently
-public static void traverseAndProcessFilesConcurrently(String sourceDirectoryPath, String reviewDirectoryPath)
-        throws Exception {
-    ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-    try {
-        Files.walk(Paths.get(sourceDirectoryPath))
-                .filter(Files::isRegularFile)
-                .forEach(file -> executorService.submit(() -> {
-                    try {
-                        String hash = getMD5Checksum(file);
-                        // Add file processing logic here
-                    } catch (IOException | NoSuchAlgorithmException e) {
-                        throw new RuntimeException(e);
-                    }
-                }));
-    } finally {
-        executorService.shutdown();
-        executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-    }
+    // Creates a fixed thread pool with the number of threads equal to the number of available processors
+ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
+try {
+    // Walk through all files in the specified source directory path
+    Files.walk(Paths.get(sourceDirectoryPath))
+            // Filter to select only regular files (not directories)
+            .filter(Files::isRegularFile)
+            // For each regular file found, submit a task to the executor service
+            .forEach(file -> executorService.submit(() -> {
+                try {
+                    // Calculate the MD5 checksum for the file
+                    String hash = getMD5Checksum(file);
+                    // Add file processing logic here
+                    // Note: You'll typically process the file in this section
+                } catch (IOException | NoSuchAlgorithmException e) {
+                    // If there is an IOException or NoSuchAlgorithmException, wrap it in a RuntimeException and throw
+                    throw new RuntimeException(e);
+                }
+            }));
+} finally {
+    // Shutdown the executor service, preventing new tasks from being submitted
+    executorService.shutdown();
+    // Wait for all tasks to complete or until interrupted
+    executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 }
 
 
@@ -166,21 +186,22 @@ public static void traverseAndProcessFilesConcurrently(String sourceDirectoryPat
 
     // Method to compute MD5 hash of a file
     public static String getMD5Checksum(Path file) throws IOException, NoSuchAlgorithmException {
+        // Open an input stream to read the file
         try (InputStream fis = Files.newInputStream(file)) {
-            byte[] buffer = new byte[1024];
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            int numBytesRead;
-            while ((numBytesRead = fis.read(buffer)) != -1) {
-                md.update(buffer, 0, numBytesRead);
+            byte[] buffer = new byte[1024]; // Create a buffer to read file data
+            MessageDigest md = MessageDigest.getInstance("MD5"); // Create MD5 message digest
+            int numBytesRead; //Create variable for number of bytes read
+            while ((numBytesRead = fis.read(buffer)) != -1) {  // Read bytes from the FileInputStream (fis) into the buffer array
+                md.update(buffer, 0, numBytesRead);  // Store the number of bytes read in the variable numBytesRead.
             }
             byte[] digest = md.digest();
             
-            StringBuilder result = new StringBuilder();
-            for (byte b : digest) {
+            StringBuilder result = new StringBuilder(); // Build new StringBuilder
+            for (byte b : digest) { 
                 
-                result.append(String.format("%02x", b));
+                result.append(String.format("%02x", b)); // Format result
             }
-            return result.toString();
+            return result.toString(); // Return result (cycle)
             
         }
         
