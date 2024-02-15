@@ -2,21 +2,27 @@ import java.io.*;
 import java.nio.file.*;
 import java.security.*;
 import java.util.*;
-import java.util.logging.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.*;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
-import javafx.stage.Stage
-// ^Tell compiler that we want to use classes listed
+import javafx.stage.Stage;
 
-    
-public class DuplicateFileRemover {
-    // Override the start method of Application class to create GUI
+public class DuplicateFileRemover extends Application {
+
+    // Define a logger for logging messages
+    private static final Logger logger = Logger.getLogger(DuplicateFileRemover.class.getName());
+
+    // Main method to start the program
+    public static void main(String[] args) {
+        launch(args);
+    }
+
     @Override
     public void start(Stage primaryStage) {
         // Set the title of the primary stage
@@ -48,85 +54,64 @@ public class DuplicateFileRemover {
         primaryStage.show();
     }
 
-    // Main method to launch the application
-    public static void main(String[] args) {
-        launch(args);
-    }
-}
-
-    // Define a logger for logging messages
-    private static final Logger logger = Logger.getLogger(DuplicateFileRemover.class.getName());
-
-    // Main method to start the program
-    public static void main(String[] args) {
-
-        //source
-        String sourceDirectoryPath = "/path/to/source/directory"; // Specify the source directory path here
-        //review
-        String reviewDirectoryPath = "/path/to/review/directory"; // Specify the review directory path here
-
-        findAndMoveDuplicateFiles(sourceDirectoryPath, reviewDirectoryPath);
-    }
-
-    
     // Method to find and move duplicate files to the review directory with retry mechanism
-public static void findAndMoveDuplicateFilesWithRetry(String sourceDirectoryPath, String reviewDirectoryPath) {
-    // Maximum number of retry attempts
-    int maxRetries = 3;
-    // Current retry attempt count
-    int retryCount = 0;
+    public static void findAndMoveDuplicateFilesWithRetry(String sourceDirectoryPath, String reviewDirectoryPath) {
+        // Maximum number of retry attempts
+        int maxRetries = 3;
+        // Current retry attempt count
+        int retryCount = 0;
 
-    // Flag to indicate if traversal and processing is successful
-    boolean traversalSuccessful = false;
+        // Flag to indicate if traversal and processing is successful
+        boolean traversalSuccessful = false;
 
-    while (!traversalSuccessful && retryCount < maxRetries) {
-        try {
-            // Attempt to traverse the directory and find duplicate files
-            findAndMoveDuplicateFiles(sourceDirectoryPath, reviewDirectoryPath);
-            // Set the flag to indicate successful traversal and processing
-            traversalSuccessful = true;
-        } catch (IOException e) {
-            // Log error if there is an issue traversing the source directory
-            logger.log(Level.SEVERE, "Error traversing directory: " + sourceDirectoryPath, e);
-            // Increment the retry count
-            retryCount++;
-            // Log the retry attempt
-            logger.log(Level.INFO, "Retrying traversal... Attempt " + retryCount + " out of " + maxRetries);
+        while (!traversalSuccessful && retryCount < maxRetries) {
+            try {
+                // Attempt to traverse the directory and find duplicate files
+                findAndMoveDuplicateFiles(sourceDirectoryPath, reviewDirectoryPath);
+                // Set the flag to indicate successful traversal and processing
+                traversalSuccessful = true;
+            } catch (IOException e) {
+                // Log error if there is an issue traversing the source directory
+                logger.log(Level.SEVERE, "Error traversing directory: " + sourceDirectoryPath, e);
+                // Increment the retry count
+                retryCount++;
+                // Log the retry attempt
+                logger.log(Level.INFO, "Retrying traversal... Attempt " + retryCount + " out of " + maxRetries);
+            }
+        }
+
+        // If traversal is still unsuccessful after maximum retries, log an error message
+        if (!traversalSuccessful) {
+            logger.log(Level.SEVERE, "Failed to traverse directory after " + maxRetries + " attempts.");
         }
     }
 
-    // If traversal is still unsuccessful after maximum retries, log an error message
-    if (!traversalSuccessful) {
-        logger.log(Level.SEVERE, "Failed to traverse directory after " + maxRetries + " attempts.");
-    }
-}
     // Creates a fixed thread pool with the number of threads equal to the number of available processors
-ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
-try {
-    // Walk through all files in the specified source directory path
-    Files.walk(Paths.get(sourceDirectoryPath))
-            // Filter to select only regular files (not directories)
-            .filter(Files::isRegularFile)
-            // For each regular file found, submit a task to the executor service
-            .forEach(file -> executorService.submit(() -> {
-                try {
-                    // Calculate the MD5 checksum for the file
-                    String hash = getMD5Checksum(file);
-                    // Add file processing logic here
-                    // Note: You'll typically process the file in this section
-                } catch (IOException | NoSuchAlgorithmException e) {
-                    // If there is an IOException or NoSuchAlgorithmException, wrap it in a RuntimeException and throw
-                    throw new RuntimeException(e);
-                }
-            }));
-} finally {
-    // Shutdown the executor service, preventing new tasks from being submitted
-    executorService.shutdown();
-    // Wait for all tasks to complete or until interrupted
-    executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-}
-
+    try {
+        // Walk through all files in the specified source directory path
+        Files.walk(Paths.get(sourceDirectoryPath))
+                // Filter to select only regular files (not directories)
+                .filter(Files::isRegularFile)
+                // For each regular file found, submit a task to the executor service
+                .forEach(file -> executorService.submit(() -> {
+                    try {
+                        // Calculate the MD5 checksum for the file
+                        String hash = getMD5Checksum(file);
+                        // Add file processing logic here
+                        // Note: You'll typically process the file in this section
+                    } catch (IOException | NoSuchAlgorithmException e) {
+                        // If there is an IOException or NoSuchAlgorithmException, wrap it in a RuntimeException and throw
+                        throw new RuntimeException(e);
+                    }
+                }));
+    } finally {
+        // Shutdown the executor service, preventing new tasks from being submitted
+        executorService.shutdown();
+        // Wait for all tasks to complete or until interrupted
+        executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+    }
 
     // Method to find and move duplicate files to the review directory
     public static void findAndMoveDuplicateFiles(String sourceDirectoryPath, String reviewDirectoryPath) {
@@ -182,9 +167,8 @@ try {
             // Log error if there is an issue traversing the source directory
             logger.log(Level.SEVERE, "Error traversing directory: " + sourceDirectoryPath, e);
         }
-        
+
     }
-    
 
     // Method to compute MD5 hash of a file
     public static String getMD5Checksum(Path file) throws IOException, NoSuchAlgorithmException {
@@ -197,16 +181,16 @@ try {
                 md.update(buffer, 0, numBytesRead);  // Store the number of bytes read in the variable numBytesRead.
             }
             byte[] digest = md.digest();
-            
+
             StringBuilder result = new StringBuilder(); // Build new StringBuilder
-            for (byte b : digest) { 
-                
+            for (byte b : digest) {
+
                 result.append(String.format("%02x", b)); // Format result
             }
             return result.toString(); // Return result (cycle)
-            
+
         }
-        
+
     }
-    
 }
+
